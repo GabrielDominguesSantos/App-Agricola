@@ -1,15 +1,17 @@
-import { Text, View } from "react-native";
+import React from "react";
+import { StatusBar, StyleSheet } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import RegistroVisitaScreen from '../src/screens/RegistroVisitaScreen';
 
-export default function Index() {
-  return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text>Edit app/index.tsx to edit this screen.</Text>
-    </View>
+export default function App() {
+  return(
+    <SafeAreaProvider style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f4f6f9" />
+      <RegistroVisitaScreen />
+    </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#f4f6f9' }
+});
