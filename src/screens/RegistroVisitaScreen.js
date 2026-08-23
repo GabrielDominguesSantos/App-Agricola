@@ -15,37 +15,48 @@ export default function RegistroVisitaScreen() {
 
     // Captura automarica dde coordenadas de auditoria (GPS)
     const capturarCoordenadasGPS = async () => {
-        const { status } = await Location.requestBackgroundPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Erro de Permissão', 'O acesso ao GPS e vital para a validacao legal da auditora.');
-            return;
+        try {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Erro de Permissão', 'O acesso ao GPS e vital para a validacao legal da auditora.');
+                return;
+            }
+            let posicao = await Location.getCurrentPositionAsync(
+                { accuracy: Location.Accuracy.BestForNavigation }
+            );
+            setLocalizacao(posicao.coords);
+        } catch (error) {
+            Alert.alert('Erro', 'Não foi possível obter a localização GPS.');
+            console.error(error);
         }
-        const posicao = await Location.getCurrentPositionAsync(
-            { accuracy: Location.Accuracy.BestForNavigation }
-        );
-        setLocalizacao(posicao.coords);
     };
 
     // Captura de imagem documental em campo (camera)
     const capturarFotoEvidencia = async () => {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Erro de Permissão', 'Acesso a câmera é obrigatório para registro fotodocumental.');
-            return;
-        }
-        const resultado = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            quality: 0.8,
-            allowsEditing: false
-        });
-        if (!resultado.canceled) {
-            setImagemEvidencia(resultado.assets[0].uri);
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Erro', 'Permissão para acessar a galeria negada.');
+                return;
+            }
+
+            const resultado = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: 'images',
+                quality: 0.8,
+                allowsEditing: false,
+            });
+
+            if (!resultado.canceled && resultado.assets && resultado.assets.length > 0) {
+                setImagemEvidencia(resultado.assets[0].uri);
+            }
+        } catch (error) {
+            Alert.alert('Erro', 'Não foi possível selecionar a imagem.');
         }
     };
 
     // Carregamento seletivo de contatos de produtores rurais cadastros no aparelho
     const carregarContatosProdutores = async () => {
-        const { status } = await Contacts.removeContactAsync();
+        const { status } = await Contacts.requestPermissionsAsync();
         if (status !== 'granted') {
             Alert.alert('Erro', 'Não é possível carregar os representantes locais sem acesso aos contatos.');
             return;
@@ -61,7 +72,7 @@ export default function RegistroVisitaScreen() {
     const finalizarRelatorioAuditoria = () => {
         if (!localizacao || !imagemEvidencia || !contatoSelecionado) {
             Alert.alert('Inconformidade de Dados', `Todos os critérios de auditoria (GPS, Evidencial Cisual e Produtor Vinculado) devem ser preenchidos`);
-                return;
+            return;
         }
         Alert.alert('Auditoria Concluída', 'Relatório de Visita Tecnica sincronizado com a central de exportação com sucesso.');
     };
@@ -96,7 +107,7 @@ export default function RegistroVisitaScreen() {
 
             <View style={globalStyles.cardVisita}>
                 <Text style={globalStyles.tituloSecao}>3. Produtor / Representante Logístico</Text>
-                <BotaoCustomizado titulo="Buscar Produtores da Agenda"
+                <BotaoCustomizado titulo=" Buscar Produtores da Agenda"
                     onPress={carregarContatosProdutores} tipo="primary" />
                 {contatoSelecionado && (
                     <Text style={[globalStyles.textoInformativo,

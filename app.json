@@ -7,9 +7,13 @@
     "icon": "./assets/images/icon.png",
     "scheme": "appagricola",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMotionUsageDescription": "App requires motion sensors to improve the quality of the service",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "App requires geolocation to improve the quality of the service",
+        "NSLocationWhenInUseUsageDescription": "Allow this app to access your location."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,8 +22,20 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS"
+      ],
+      "package": "com.anonymous.AppAgricola"
     },
     "web": {
       "output": "static",
@@ -38,7 +54,30 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow this app to access your location.",
+          "locationAlwaysAndWhenInUsePermission": "App requires geolocation to improve the quality of the service."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "O acesso à câmera é obrigatório para registro fotodocumental da vistoria.",
+          "photosPermission": "O acesso à galeria é necessário para armazenar a foto tirada pela câmera."
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "O acesso aos contatos permite carregar os representantes locais cadastrados.",
+          "microphonePermission": "O acesso ao microfone é necessário caso grave vídeos de evidência.",
+          "photosPermission": "O acesso à galeria permite selecionar ou salvar fotos da auditoria."
+        }
+      ],
+      "expo-sensors"
     ],
     "experiments": {
       "typedRoutes": true,
