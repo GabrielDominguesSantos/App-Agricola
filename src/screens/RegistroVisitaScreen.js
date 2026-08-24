@@ -1,10 +1,11 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, Alert, Image, FlatList } from 'react-native'
+import React, { useState, useEffect } from "react";
+import { View, Text, ScrollView, Alert, Image, FlatList } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import * as Contacts from 'expo-contacts';
 import { globalStyles } from "../styles/globalStyle";
 import BotaoCustomizado from "../components/BotaoCustomizado";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function RegistroVisitaScreen() {
     // Estados para dados consolidados da auditoria tecnica
@@ -12,6 +13,66 @@ export default function RegistroVisitaScreen() {
     const [imagemEvidencia, setImagemEvidencia] = useState(null);
     const [contatoSelecionado, setContatoSelecionado] = useState(null);
     const [listaContatosDisponiveis, setListaContatosDisponiveis] = useState([]);
+    const [historicoAuditorias, setHistoricoAuditorias] = useState([]);
+    const CHAVE_HISTORICO_AUDITORIAS = 'historico-auditorias';
+
+    useEffect(() => {
+        buscarHistoricoAuditorias();
+    }, []);
+    
+    const buscarHistoricoAuditorias = async () => {
+        try {
+            const dadosSalvos = await AsyncStorage.getItem(CHAVE_HISTORICO_AUDITORIAS);
+
+            if(!dadosSalvos) {
+                setHistoricoAuditorias([]);
+                return;
+            }
+            const dadosConvertidos = JSON.parse(dadosSalvos);
+            const historico = Array.isArray(dadosConvertidos) ? dadosConvertidos : [dadosConvertidos];
+            setHistoricoAuditorias(historico);
+        } catch (error) {
+            console.log('Erro ao buscar histórico', error);
+            setHistoricoAuditorias([]);
+
+            Alert.alert(
+                'Erro',
+                'Não foi possível carregar o histórico de auditorias.'
+            )
+        }
+    };
+    
+    const salvarDadosAuditoria = async () => {
+        const novaAuditoria = {
+            id: Date.now().toString(),
+            data: new Date().toISOString(),
+            localizacao,
+            imagemEvidencia,
+            contatoSelecionado,
+        }
+
+        try {
+            const dadosSalvos = await AsyncStorage.getItem(CHAVE_HISTORICO_AUDITORIAS);
+            const historicoAtual = dadosSalvos ? JSON.parse(dadosSalvos) : [];
+            const listaHistorico = Array.isArray(historicoAtual) ? historicoAtual : [historicoAtual];
+            const historicoAtualizado = [novaAuditoria, ...listaHistorico];
+
+            await AsyncStorage.setItem(CHAVE_HISTORICO_AUDITORIAS, JSON.stringify(historicoAtualizado));
+            setHistoricoAuditorias(historicoAtualizado);
+
+            setLocalizacao(null);
+            setImagemEvidencia(null);
+            setContatoSelecionado(null);
+
+            return true;
+        } catch (error) {
+            Alert.alert(
+                'Erro',
+                'Não foi possível salvar a auditora.'
+            )
+            return false;
+        }
+    }
 
     // Captura automarica dde coordenadas de auditoria (GPS)
     const capturarCoordenadasGPS = async () => {
@@ -69,12 +130,19 @@ export default function RegistroVisitaScreen() {
     };
 
     // Validação final do Relatório de Vistoria Tecnica
-    const finalizarRelatorioAuditoria = () => {
+    const finalizarRelatorioAuditoria = async () => {
         if (!localizacao || !imagemEvidencia || !contatoSelecionado) {
             Alert.alert('Inconformidade de Dados', `Todos os critérios de auditoria (GPS, Evidencial Cisual e Produtor Vinculado) devem ser preenchidos`);
             return;
         }
-        Alert.alert('Auditoria Concluída', 'Relatório de Visita Tecnica sincronizado com a central de exportação com sucesso.');
+        const salvou = await salvarDadosAuditoria();
+
+        if (!salvou) return;
+
+        Alert.alert(
+            'Auditoria Concluída', 
+            'Relatório de visita salvo no dispositivo com sucesso.'
+        );
     };
 
     return(
@@ -133,6 +201,49 @@ export default function RegistroVisitaScreen() {
             <BotaoCustomizado titulo="Finalizar e Assinar Auditoria"
                 onPress={finalizarRelatorioAuditoria} tipo="success" />
             <View style={{ height: 40 }} />
+
+            {historicoAuditorias.length > 0 && (
+                <View style={globalStyles.cardVisita}>
+                    <Text style={globalStyles.tituloSecao}>
+                        Histórico de Auditorias
+                    </Text>
+
+        {historicoAuditorias.map((auditoria) => (
+            <View
+                key={auditoria.id}
+                style={globalStyles.itemListaContato}
+            >
+                <Text style={globalStyles.nomeContatoText}>
+                    Auditoria realizada em:{' '}
+                    {auditoria.data
+                        ? new Date(auditoria.data).toLocaleString('pt-BR')
+                        : 'Data não informada'}
+                </Text>
+
+                {auditoria.localizacao && (
+                    <Text style={globalStyles.textoInformativo}>
+                        Localização:{' '}
+                        {auditoria.localizacao.latitude?.toFixed(6)},{' '}
+                        {auditoria.localizacao.longitude?.toFixed(6)}
+                    </Text>
+                )}
+
+                {auditoria.contatoSelecionado && (
+                    <Text style={globalStyles.textoInformativo}>
+                        Produtor: {auditoria.contatoSelecionado.name}
+                    </Text>
+                )}
+
+                {auditoria.imagemEvidencia && (
+                    <Image
+                        source={{ uri: auditoria.imagemEvidencia }}
+                        style={globalStyles.imagePreview}
+                    />
+                )}
+            </View>
+        ))}
+    </View>
+)}
         </ScrollView>
     );
 }
